@@ -45,7 +45,8 @@ Principio clave: tras responder `250 OK` el mensaje **no puede perderse**. La co
 |---|---|
 | `cmd/virtualbox` | Punto de entrada del demonio |
 | `internal/config` | Configuración estática de arranque |
-| `internal/queue` | Interfaz de la cola persistente |
+| `internal/queue` | Interfaz de la cola y `FileQueue` (cola en ficheros con fsync), política de reintentos |
+| `internal/dsn` | Generación de DSN/rebotes (RFC 3464) |
 | `internal/policy` | Resolución destinatario → acciones (reenvío, catch-all, ...) |
 | `internal/backend` | Interfaz y registro de backends externos |
 | `internal/smtpd` | Servidores SMTP MX y submission *(pendiente)* |
