@@ -10,7 +10,7 @@ Leyenda: ✅ hecho · 🚧 en curso · ⬜ pendiente
 
 ## Fase 1 — MVP de recepción y entrega ⬜
 Objetivo: recibir correo para un dominio registrado, redirigirlo y entregarlo, con identidad DNS correcta, protección básica y estadísticas de uso.
-- ⬜ 1.1 Cola persistente en disco (fsync, reintentos con backoff, expiración y DSN)
+- ✅ 1.1 Cola persistente en disco (ficheros con fsync y rename atómico, reintentos con backoff, expiración y generador de DSN)
 - ⬜ 1.2 Listener MX (:25): aceptar solo dominios registrados, límites de tamaño y conexiones, STARTTLS
 - ⬜ 1.3 Resolver de políticas: alias, redirección múltiple, catch-all y subdirecciones `+tag` (almacén de config en SQLite)
 - ⬜ 1.4 Cliente SMTP saliente: lookup MX, TLS, reintentos
