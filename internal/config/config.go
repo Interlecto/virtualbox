@@ -19,6 +19,11 @@ type Config struct {
 	// DataDir holds the persistent queue and local state.
 	DataDir string `json:"data_dir"`
 	Listen  Listen `json:"listen"`
+	// TLS is the certificate used for STARTTLS and implicit TLS. Empty
+	// disables TLS (not recommended outside tests).
+	TLS TLS `json:"tls"`
+	// MX tunes the inbound SMTP service; zero values select safe defaults.
+	MX MXLimits `json:"mx"`
 	// Domains are the registered domains this server accepts mail for.
 	Domains []Domain `json:"domains"`
 }
@@ -29,6 +34,22 @@ type Listen struct {
 	Submission    string `json:"submission"`     // STARTTLS submission, normally :587
 	SubmissionTLS string `json:"submission_tls"` // implicit TLS submission, normally :465
 	Admin         string `json:"admin"`          // admin API / UI
+}
+
+// TLS points to a PEM certificate chain and its private key.
+type TLS struct {
+	CertFile string `json:"cert_file"`
+	KeyFile  string `json:"key_file"`
+}
+
+// MXLimits are the resource limits of the inbound SMTP service.
+// A zero value means "use the default" (see internal/smtpd).
+type MXLimits struct {
+	MaxMessageBytes     int64 `json:"max_message_bytes"`
+	MaxRecipients       int   `json:"max_recipients"`
+	MaxConnections      int   `json:"max_connections"`
+	MaxConnectionsPerIP int   `json:"max_connections_per_ip"`
+	TimeoutSeconds      int   `json:"timeout_seconds"`
 }
 
 // Domain is a registered domain.
@@ -66,6 +87,14 @@ func (c *Config) Validate() error {
 	}
 	if strings.TrimSpace(c.DataDir) == "" {
 		return errors.New("data_dir is required")
+	}
+	if (c.TLS.CertFile == "") != (c.TLS.KeyFile == "") {
+		return errors.New("tls.cert_file and tls.key_file must be set together")
+	}
+	m := c.MX
+	if m.MaxMessageBytes < 0 || m.MaxRecipients < 0 || m.MaxConnections < 0 ||
+		m.MaxConnectionsPerIP < 0 || m.TimeoutSeconds < 0 {
+		return errors.New("mx limits must not be negative")
 	}
 	seen := make(map[string]bool, len(c.Domains))
 	for _, d := range c.Domains {

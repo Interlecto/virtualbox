@@ -7,6 +7,17 @@
     "submission_tls": ":465",
     "admin": "127.0.0.1:8080"
   },
+  "tls": {
+    "cert_file": "",
+    "key_file": ""
+  },
+  "mx": {
+    "max_message_bytes": 26214400,
+    "max_recipients": 100,
+    "max_connections": 200,
+    "max_connections_per_ip": 10,
+    "timeout_seconds": 120
+  },
   "domains": [
     {
       "name": "example.org",

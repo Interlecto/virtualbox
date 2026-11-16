@@ -2,7 +2,7 @@
 
 Buzón virtual de correo electrónico: un servidor de correo (MTA) para dominios registrados que **recibe, redirige, responde y envía, pero no guarda correo**. El almacenamiento se delega a servidores externos (IMAP, LMTP, webhook, S3, archivo).
 
-> **Estado:** esqueleto inicial. Aún no hay servicios SMTP funcionando. Vea [ROADMAP.md](ROADMAP.md) y [TODO.md](TODO.md).
+> **Estado:** en desarrollo temprano. Ya recibe correo por SMTP (puerto 25 con STARTTLS opcional) y lo guarda en una cola persistente, pero **todavía no lo entrega a ningún destino** (ver paso 1.4). Vea [ROADMAP.md](ROADMAP.md) y [TODO.md](TODO.md).
 
 ## Características objetivo
 
@@ -47,9 +47,9 @@ Principio clave: tras responder `250 OK` el mensaje **no puede perderse**. La co
 | `internal/config` | Configuración estática de arranque |
 | `internal/queue` | Interfaz de la cola y `FileQueue` (cola en ficheros con fsync), política de reintentos |
 | `internal/dsn` | Generación de DSN/rebotes (RFC 3464) |
-| `internal/policy` | Resolución destinatario → acciones (reenvío, catch-all, ...) |
+| `internal/policy` | Resolución destinatario → acciones (reenvío, catch-all, ...); `StaticResolver` provisional |
 | `internal/backend` | Interfaz y registro de backends externos |
-| `internal/smtpd` | Servidores SMTP MX y submission *(pendiente)* |
+| `internal/smtpd` | Servidor SMTP MX (:25) con `go-smtp`; submission *(pendiente)* |
 | `internal/delivery` | Despachador y cliente SMTP saliente *(pendiente)* |
 | `internal/autoreply` | Auto-responders *(pendiente)* |
 | `internal/tempbox` | Buzón temporal *(pendiente)* |
