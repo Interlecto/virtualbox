@@ -1,0 +1,22 @@
+# Binaries
+/bin/
+/virtualbox
+/virtualbox.exe
+*.test
+*.out
+
+# Local runtime data and config
+/data/
+/config.json
+*.local.json
+
+# Secrets (DKIM keys, TLS keys)
+*.pem
+*.key
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

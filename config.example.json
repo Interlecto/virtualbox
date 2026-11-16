@@ -1,0 +1,16 @@
+{
+  "hostname": "mx.example.org",
+  "data_dir": "./data",
+  "listen": {
+    "mx": ":25",
+    "submission": ":587",
+    "submission_tls": ":465",
+    "admin": "127.0.0.1:8080"
+  },
+  "domains": [
+    {
+      "name": "example.org",
+      "catch_all": ""
+    }
+  ]
+}
