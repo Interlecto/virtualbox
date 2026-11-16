@@ -14,6 +14,9 @@ Pendientes inmediatos y decisiones abiertas. Los pasos grandes están en [ROADMA
 - [ ] Serialización del campo `Action` en `queue.Envelope` (hoy es `[]byte` opaco)
 - [ ] Modelo de usuarios y credenciales de submission (propio frente a externo)
 - [ ] Evaluar Stalwart y Maddy como referencia o base antes de la Fase 1
+- [ ] Estadísticas (1.10): confirmar cubetas (hora/día), retención por defecto y si el volcado usa la misma base SQLite que la configuración
+- [ ] Estadísticas: lista cerrada de dimensiones permitidas para evitar explosión de cardinalidad
+- [ ] Revisar el wishlist del ROADMAP y proponer qué ideas suben al flujo principal tras la Fase 3
 
 ## Deuda técnica
 - [ ] Implementación en memoria de `queue.Queue` para pruebas de otros paquetes
