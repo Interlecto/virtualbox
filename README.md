@@ -17,6 +17,9 @@ Buzón virtual de correo electrónico: un servidor de correo (MTA) para dominios
 3. **Listas de correo** de difusión y de discusión.
 4. **Almacenamiento externo** conectable como buzón o archivo.
 5. **Registrable en DNS** como servidor de correo (MX), con asistente para SPF, DKIM, DMARC, MTA-STS y TLSRPT.
+6. **Estadísticas básicas de uso** integradas (qué opciones se usan y cuánto), consultables por CLI y API sin servicio externo. Ver [docs/ESTADISTICAS.md](docs/ESTADISTICAS.md).
+
+Las ideas futuras están en el [wishlist del roadmap](ROADMAP.md#wishlist-y-backlog-de-ideas).
 
 ## Arquitectura
 
@@ -52,6 +55,7 @@ Principio clave: tras responder `250 OK` el mensaje **no puede perderse**. La co
 | `internal/lists` | Listas de correo *(pendiente)* |
 | `internal/dnshelp` | Asistente de registros DNS *(pendiente)* |
 | `internal/admin` | API y UI de administración *(pendiente)* |
+| `internal/stats` | Contadores de uso y consulta *(pendiente, paso 1.10)* |
 
 ## Desarrollo
 

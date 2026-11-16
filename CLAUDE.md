@@ -40,6 +40,13 @@ Repositorio: https://github.com/interlecto/virtualbox (público, licencia Apache
 5. **Autoresponders** conforme al RFC 3834: sin respuesta a remitente vacío, listas, masivos ni `Auto-Submitted`; límite por remitente.
 6. **Sin almacenamiento local de correo** salvo `internal/tempbox`, siempre con cuota y TTL.
 7. **Secretos** (claves DKIM, TLS, credenciales) nunca en el repositorio ni en logs.
+8. **Estadísticas**: toda función nueva registra sus contadores en `internal/stats` (ver [docs/ESTADISTICAS.md](docs/ESTADISTICAS.md)). Solo agregados; nunca contenido de mensajes ni direcciones de terceros.
+
+## Roadmap y wishlist
+
+- `ROADMAP.md` tiene el flujo principal (fases y pasos numerados) y, al final, el **wishlist/backlog de ideas**.
+- Las ideas nuevas se añaden al wishlist. Para subir una al flujo principal se hace un PR `docs/…` que le asigne fase y paso y marque la idea con `→ N.N`.
+- Al completar un paso, su PR cambia ⬜ por ✅ en `ROADMAP.md`.
 
 ## Entorno
 
