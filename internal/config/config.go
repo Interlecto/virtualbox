@@ -9,7 +9,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
+
+	"github.com/interlecto/virtualbox/internal/policy"
 )
 
 // Config is the root static configuration.
@@ -18,7 +21,10 @@ type Config struct {
 	Hostname string `json:"hostname"`
 	// DataDir holds the persistent queue and local state.
 	DataDir string `json:"data_dir"`
-	Listen  Listen `json:"listen"`
+	// DBPath is the SQLite configuration database (domains, aliases).
+	// Empty means <data_dir>/virtualbox.db.
+	DBPath string `json:"db_path"`
+	Listen Listen `json:"listen"`
 	// TLS is the certificate used for STARTTLS and implicit TLS. Empty
 	// disables TLS (not recommended outside tests).
 	TLS TLS `json:"tls"`
@@ -58,6 +64,18 @@ type Domain struct {
 	// CatchAll is the address that receives mail for unknown local parts.
 	// Empty means unknown recipients are rejected.
 	CatchAll string `json:"catch_all"`
+	// Aliases maps a local part to one or more forward targets, e.g.
+	// {"info": ["a@x.net", "b@x.net"]}. A "user+tag" key is a rule for that
+	// exact tag; plain "user" also answers "user+anything".
+	Aliases map[string][]string `json:"aliases"`
+}
+
+// DatabasePath returns DBPath, defaulting to a file inside DataDir.
+func (c *Config) DatabasePath() string {
+	if c.DBPath != "" {
+		return c.DBPath
+	}
+	return filepath.Join(c.DataDir, "virtualbox.db")
 }
 
 // Load reads and validates the JSON configuration at path.
@@ -106,6 +124,24 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("duplicate domain %q", name)
 		}
 		seen[name] = true
+		if d.CatchAll != "" {
+			if err := (policy.Destination{Kind: policy.KindForward, Address: d.CatchAll}).Validate(); err != nil {
+				return fmt.Errorf("domain %q catch_all: %w", name, err)
+			}
+		}
+		for local, targets := range d.Aliases {
+			if local == "" || strings.ContainsAny(local, " \t\r\n@<>") {
+				return fmt.Errorf("domain %q: invalid alias name %q", name, local)
+			}
+			if len(targets) == 0 {
+				return fmt.Errorf("domain %q alias %q: no targets", name, local)
+			}
+			for _, t := range targets {
+				if err := (policy.Destination{Kind: policy.KindForward, Address: t}).Validate(); err != nil {
+					return fmt.Errorf("domain %q alias %q: %w", name, local, err)
+				}
+			}
+		}
 	}
 	return nil
 }
