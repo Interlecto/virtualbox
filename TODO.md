@@ -7,7 +7,7 @@ Pendientes inmediatos y decisiones abiertas. Los pasos grandes están en [ROADMA
 - [ ] Crear issues en GitHub para cada paso de la Fase 1
 
 ## Decisiones abiertas
-- [ ] Almacén de configuración: SQLite al inicio, PostgreSQL para producción multi-nodo
+- [ ] Almacén de configuración: SQLite en uso desde 1.3 (`internal/store`); decidir si/cuándo migrar a PostgreSQL para producción multi-nodo
 - [ ] Serialización del campo `Action` en `queue.Envelope` (hoy es `[]byte` opaco)
 - [ ] Modelo de usuarios y credenciales de submission (propio frente a externo)
 - [ ] Evaluar Stalwart y Maddy como referencia o base antes de la Fase 1
@@ -18,9 +18,12 @@ Pendientes inmediatos y decisiones abiertas. Los pasos grandes están en [ROADMA
 ## Deuda técnica
 - [ ] MX (1.2): detección de bucles por número de cabeceras `Received` (RFC 5321 6.3)
 - [ ] MX (1.2): aceptar `RCPT TO:<postmaster>` sin dominio (RFC 5321 4.5.1)
-- [ ] MX (1.2): resolver real con alias y varios destinos (1.3) en lugar de `policy.StaticResolver`
 - [ ] MX (1.2): conectar certificados ACME (1.8) en lugar de `tls.cert_file`/`tls.key_file` manuales
 - [ ] MX (1.2): contadores de conexiones, rechazos por motivo y mensajes aceptados (1.10)
+- [ ] Resolver (1.3): contadores de uso por tipo de acción, catch-all y `+tag` (parámetro `match` de `Action.Params`) en el paso 1.10
+- [ ] Resolver (1.3): los destinos de un alias que apuntan a otro alias local no se expanden; el despachador (1.4) debe volver a resolverlos con límite de profundidad para evitar bucles
+- [ ] Resolver (1.3): caché de consultas con invalidación si la latencia de SQLite resulta relevante en el RCPT
+- [ ] Resolver (1.3): CRUD de alias por CLI/API (hoy solo se siembran desde `config.json`; ver 6.3)
 - [ ] Recarga de configuración y de certificados sin reiniciar
 - [ ] Cola (1.1): medir rendimiento (hoy un fsync por entrada) y valorar agrupar escrituras
 - [ ] Cola (1.1): añadir *jitter* al backoff y límite de espacio en disco para la cola

@@ -47,7 +47,8 @@ Principio clave: tras responder `250 OK` el mensaje **no puede perderse**. La co
 | `internal/config` | Configuración estática de arranque |
 | `internal/queue` | Interfaz de la cola y `FileQueue` (cola en ficheros con fsync), política de reintentos |
 | `internal/dsn` | Generación de DSN/rebotes (RFC 3464) |
-| `internal/policy` | Resolución destinatario → acciones (reenvío, catch-all, ...); `StaticResolver` provisional |
+| `internal/policy` | Resolución destinatario → acciones: `AliasResolver` (alias, varios destinos, `+tag`, catch-all) y `StaticResolver` mínimo |
+| `internal/store` | Almacén de configuración en SQLite (dominios, alias y destinos); implementa `policy.Directory` |
 | `internal/backend` | Interfaz y registro de backends externos |
 | `internal/smtpd` | Servidor SMTP MX (:25) con `go-smtp`; submission *(pendiente)* |
 | `internal/delivery` | Despachador y cliente SMTP saliente *(pendiente)* |
@@ -57,6 +58,18 @@ Principio clave: tras responder `250 OK` el mensaje **no puede perderse**. La co
 | `internal/dnshelp` | Asistente de registros DNS *(pendiente)* |
 | `internal/admin` | API y UI de administración *(pendiente)* |
 | `internal/stats` | Contadores de uso y consulta *(pendiente, paso 1.10)* |
+
+## Alias y enrutamiento
+
+Los dominios, alias y destinos viven en una base SQLite (`db_path`, por defecto `<data_dir>/virtualbox.db`). Al arrancar, `config.json` **siembra** lo que falte (dominios, `catch_all` y `aliases`) sin sobrescribir ni borrar reglas ya existentes, de modo que los cambios posteriores hechos por la herramienta de administración sobreviven a los reinicios.
+
+Para cada destinatario el resolver prueba, en orden:
+
+1. la parte local exacta (`ana+news` puede tener su propia regla);
+2. la parte local base sin `+etiqueta` (`ana+compras@…` usa la regla de `ana`);
+3. el catch-all del dominio.
+
+Si nada coincide, el RCPT se rechaza con `550 User unknown` durante la sesión SMTP; un dominio no registrado da `550 Relay access denied`. Un alias puede tener varios destinos (se entregan como un único reenvío con varios `Targets`, sin duplicados). La parte local no distingue mayúsculas. La etiqueta usada y el tipo de coincidencia quedan en `Action.Params` (`match`, `tag`).
 
 ## Desarrollo
 

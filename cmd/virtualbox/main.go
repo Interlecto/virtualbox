@@ -16,6 +16,7 @@ import (
 	"github.com/interlecto/virtualbox/internal/policy"
 	"github.com/interlecto/virtualbox/internal/queue"
 	"github.com/interlecto/virtualbox/internal/smtpd"
+	"github.com/interlecto/virtualbox/internal/store"
 )
 
 func main() {
@@ -47,6 +48,20 @@ func run(ctx context.Context, cfg *config.Config, log *slog.Logger) error {
 		return err
 	}
 
+	if err := os.MkdirAll(cfg.DataDir, 0o750); err != nil {
+		return fmt.Errorf("create data dir: %w", err)
+	}
+	db, err := store.Open(cfg.DatabasePath())
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	seeded, err := db.SeedFromConfig(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	log.Info("configuration store ready", "path", cfg.DatabasePath(), "seeded_rules", seeded)
+
 	tlsCfg, err := loadTLS(cfg.TLS)
 	if err != nil {
 		return err
@@ -55,15 +70,11 @@ func run(ctx context.Context, cfg *config.Config, log *slog.Logger) error {
 	var servers []*smtpd.MX
 
 	if cfg.Listen.MX != "" {
-		catchAll := make(map[string]string, len(cfg.Domains))
-		for _, d := range cfg.Domains {
-			catchAll[d.Name] = d.CatchAll
-		}
 		mx, err := smtpd.NewMX(smtpd.Config{
 			Hostname:            cfg.Hostname,
 			Addr:                cfg.Listen.MX,
 			TLS:                 tlsCfg,
-			Resolver:            policy.NewStaticResolver(catchAll),
+			Resolver:            policy.NewAliasResolver(db),
 			Queue:               q,
 			Logger:              log,
 			MaxMessageBytes:     cfg.MX.MaxMessageBytes,
