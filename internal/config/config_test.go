@@ -36,3 +36,33 @@ func TestHasDomain(t *testing.T) {
 		t.Error("unexpected domain match")
 	}
 }
+
+func TestValidateTLSAndLimits(t *testing.T) {
+	base := Config{Hostname: "h", DataDir: "d"}
+
+	c := base
+	c.TLS.CertFile = "cert.pem"
+	if err := c.Validate(); err == nil {
+		t.Error("cert without key should be rejected")
+	}
+	c.TLS.KeyFile = "key.pem"
+	if err := c.Validate(); err != nil {
+		t.Errorf("cert and key together should be valid: %v", err)
+	}
+
+	c = base
+	c.MX.MaxRecipients = -1
+	if err := c.Validate(); err == nil {
+		t.Error("negative limit should be rejected")
+	}
+}
+
+func TestExampleConfigLoads(t *testing.T) {
+	c, err := Load("../../config.example.json")
+	if err != nil {
+		t.Fatalf("config.example.json must stay valid: %v", err)
+	}
+	if !c.HasDomain("example.org") {
+		t.Error("example domain missing")
+	}
+}

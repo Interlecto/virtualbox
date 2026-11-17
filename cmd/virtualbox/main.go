@@ -3,12 +3,19 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"time"
 
 	"github.com/interlecto/virtualbox/internal/config"
+	"github.com/interlecto/virtualbox/internal/policy"
+	"github.com/interlecto/virtualbox/internal/queue"
+	"github.com/interlecto/virtualbox/internal/smtpd"
 )
 
 func main() {
@@ -26,13 +33,88 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	log.Info("virtualbox starting",
-		"hostname", cfg.Hostname,
-		"domains", len(cfg.Domains))
+	if err := run(ctx, cfg, log); err != nil {
+		log.Error("fatal", "err", err)
+		os.Exit(1)
+	}
+}
 
-	// TODO(roadmap phase 1): start MX listener, queue and dispatcher here.
-	log.Warn("no services implemented yet; see ROADMAP.md")
+func run(ctx context.Context, cfg *config.Config, log *slog.Logger) error {
+	log.Info("virtualbox starting", "hostname", cfg.Hostname, "domains", len(cfg.Domains))
+
+	q, err := queue.OpenFileQueue(filepath.Join(cfg.DataDir, "queue"), queue.FileOptions{})
+	if err != nil {
+		return err
+	}
+
+	tlsCfg, err := loadTLS(cfg.TLS)
+	if err != nil {
+		return err
+	}
+
+	var servers []*smtpd.MX
+
+	if cfg.Listen.MX != "" {
+		catchAll := make(map[string]string, len(cfg.Domains))
+		for _, d := range cfg.Domains {
+			catchAll[d.Name] = d.CatchAll
+		}
+		mx, err := smtpd.NewMX(smtpd.Config{
+			Hostname:            cfg.Hostname,
+			Addr:                cfg.Listen.MX,
+			TLS:                 tlsCfg,
+			Resolver:            policy.NewStaticResolver(catchAll),
+			Queue:               q,
+			Logger:              log,
+			MaxMessageBytes:     cfg.MX.MaxMessageBytes,
+			MaxRecipients:       cfg.MX.MaxRecipients,
+			MaxConnections:      cfg.MX.MaxConnections,
+			MaxConnectionsPerIP: cfg.MX.MaxConnectionsPerIP,
+			Timeout:             time.Duration(cfg.MX.TimeoutSeconds) * time.Second,
+		})
+		if err != nil {
+			return err
+		}
+		if err := mx.Listen(); err != nil {
+			return err
+		}
+		servers = append(servers, mx)
+		go func() {
+			if err := mx.Serve(); err != nil {
+				log.Error("mx stopped", "err", err)
+			}
+		}()
+	}
+
+	// TODO(roadmap 1.4): start the dispatcher. Until then accepted mail
+	// stays in the queue and is not delivered anywhere.
+	log.Warn("delivery is not implemented yet: accepted mail remains queued (see ROADMAP.md)")
 
 	<-ctx.Done()
 	log.Info("virtualbox stopping")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	for _, s := range servers {
+		if err := s.Shutdown(shutdownCtx); err != nil {
+			log.Warn("shutdown", "err", err)
+		}
+	}
+	return nil
+}
+
+// loadTLS returns the server TLS configuration, or nil when TLS is not
+// configured (STARTTLS is then not offered).
+func loadTLS(c config.TLS) (*tls.Config, error) {
+	if c.CertFile == "" {
+		return nil, nil
+	}
+	cert, err := tls.LoadX509KeyPair(c.CertFile, c.KeyFile)
+	if err != nil {
+		return nil, fmt.Errorf("load tls certificate: %w", err)
+	}
+	return &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		MinVersion:   tls.VersionTLS12,
+	}, nil
 }

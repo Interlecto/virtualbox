@@ -40,13 +40,13 @@ const (
 
 // Action is one step to apply to a message for one recipient.
 type Action struct {
-	Kind Kind
+	Kind Kind `json:"kind"`
 	// Targets are destination addresses (forward) or list IDs (list).
-	Targets []string
+	Targets []string `json:"targets,omitempty"`
 	// Backend names a configured storage backend (store).
-	Backend string
+	Backend string `json:"backend,omitempty"`
 	// Params carries kind-specific settings (TTL, quota, reply text, ...).
-	Params map[string]string
+	Params map[string]string `json:"params,omitempty"`
 }
 
 // Resolver maps a recipient address to its actions.
