@@ -1,6 +1,7 @@
 {
   "hostname": "mx.example.org",
   "data_dir": "./data",
+  "db_path": "",
   "listen": {
     "mx": ":25",
     "submission": ":587",
@@ -21,7 +22,11 @@
   "domains": [
     {
       "name": "example.org",
-      "catch_all": ""
+      "catch_all": "",
+      "aliases": {
+        "info": ["alice@example.net", "bob@example.net"],
+        "alice": ["alice@example.net"]
+      }
     }
   ]
 }
