@@ -13,7 +13,7 @@ Objetivo: recibir correo para un dominio registrado, redirigirlo y entregarlo, c
 - ✅ 1.1 Cola persistente en disco (ficheros con fsync y rename atómico, reintentos con backoff, expiración y generador de DSN)
 - ✅ 1.2 Listener MX (:25) con `emersion/go-smtp`: acepta solo dominios registrados, límites de tamaño, destinatarios y conexiones (total y por IP), STARTTLS, cabecera `Received`
 - ✅ 1.3 Resolver de políticas: alias, redirección múltiple, catch-all y subdirecciones `+tag` (almacén de config en SQLite)
-- ⬜ 1.4 Cliente SMTP saliente: lookup MX, TLS, reintentos
+- ✅ 1.4 Cliente SMTP saliente: lookup MX, TLS, reintentos
 - ⬜ 1.5 Firma DKIM por dominio y SRS para reenvíos
 - ⬜ 1.6 Verificación entrante de SPF, DKIM y DMARC
 - ⬜ 1.7 Asistente y diagnóstico DNS: generar y verificar MX, SPF, DKIM, DMARC y PTR; comprobar presencia en listas negras; informe de entregabilidad por dominio

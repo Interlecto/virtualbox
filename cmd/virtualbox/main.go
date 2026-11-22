@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/interlecto/virtualbox/internal/config"
+	"github.com/interlecto/virtualbox/internal/delivery"
 	"github.com/interlecto/virtualbox/internal/policy"
 	"github.com/interlecto/virtualbox/internal/queue"
 	"github.com/interlecto/virtualbox/internal/smtpd"
@@ -67,6 +68,8 @@ func run(ctx context.Context, cfg *config.Config, log *slog.Logger) error {
 		return err
 	}
 
+	resolver := policy.NewAliasResolver(db)
+
 	var servers []*smtpd.MX
 
 	if cfg.Listen.MX != "" {
@@ -74,7 +77,7 @@ func run(ctx context.Context, cfg *config.Config, log *slog.Logger) error {
 			Hostname:            cfg.Hostname,
 			Addr:                cfg.Listen.MX,
 			TLS:                 tlsCfg,
-			Resolver:            policy.NewAliasResolver(db),
+			Resolver:            resolver,
 			Queue:               q,
 			Logger:              log,
 			MaxMessageBytes:     cfg.MX.MaxMessageBytes,
@@ -97,12 +100,35 @@ func run(ctx context.Context, cfg *config.Config, log *slog.Logger) error {
 		}()
 	}
 
-	// TODO(roadmap 1.4): start the dispatcher. Until then accepted mail
-	// stays in the queue and is not delivered anywhere.
-	log.Warn("delivery is not implemented yet: accepted mail remains queued (see ROADMAP.md)")
+	retry := queue.DefaultRetryPolicy()
+	if h := cfg.Delivery.MaxQueueHours; h > 0 {
+		retry.MaxAge = time.Duration(h) * time.Hour
+	}
+	dispatcher, err := delivery.New(delivery.Config{
+		Hostname: cfg.Hostname,
+		Queue:    q,
+		Sender:   &delivery.Client{Hostname: cfg.Hostname, Logger: log},
+		Resolver: resolver,
+		// TODO(roadmap 1.5): replace with SRS. Until then forwarded mail
+		// keeps the original envelope sender and may fail SPF.
+		RewriteSender: delivery.KeepSender,
+		Retry:         retry,
+		Workers:       cfg.Delivery.Workers,
+		Logger:        log,
+	})
+	if err != nil {
+		return err
+	}
+	log.Warn("SRS is not implemented yet (roadmap 1.5): forwards keep the original envelope sender")
+	dispatched := make(chan struct{})
+	go func() {
+		dispatcher.Run(ctx)
+		close(dispatched)
+	}()
 
 	<-ctx.Done()
 	log.Info("virtualbox stopping")
+	<-dispatched
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

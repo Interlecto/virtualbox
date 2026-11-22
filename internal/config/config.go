@@ -30,6 +30,8 @@ type Config struct {
 	TLS TLS `json:"tls"`
 	// MX tunes the inbound SMTP service; zero values select safe defaults.
 	MX MXLimits `json:"mx"`
+	// Delivery tunes the outbound dispatcher; zero values select defaults.
+	Delivery Delivery `json:"delivery"`
 	// Domains are the registered domains this server accepts mail for.
 	Domains []Domain `json:"domains"`
 }
@@ -46,6 +48,15 @@ type Listen struct {
 type TLS struct {
 	CertFile string `json:"cert_file"`
 	KeyFile  string `json:"key_file"`
+}
+
+// Delivery configures the outbound dispatcher (see internal/delivery).
+type Delivery struct {
+	// Workers is the number of concurrent deliveries (default 4).
+	Workers int `json:"workers"`
+	// MaxQueueHours is how long a message is retried before it bounces
+	// (default 120, i.e. 5 days).
+	MaxQueueHours int `json:"max_queue_hours"`
 }
 
 // MXLimits are the resource limits of the inbound SMTP service.
@@ -113,6 +124,9 @@ func (c *Config) Validate() error {
 	if m.MaxMessageBytes < 0 || m.MaxRecipients < 0 || m.MaxConnections < 0 ||
 		m.MaxConnectionsPerIP < 0 || m.TimeoutSeconds < 0 {
 		return errors.New("mx limits must not be negative")
+	}
+	if c.Delivery.Workers < 0 || c.Delivery.MaxQueueHours < 0 {
+		return errors.New("delivery settings must not be negative")
 	}
 	seen := make(map[string]bool, len(c.Domains))
 	for _, d := range c.Domains {
