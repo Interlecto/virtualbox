@@ -19,6 +19,10 @@
     "max_connections_per_ip": 10,
     "timeout_seconds": 120
   },
+  "delivery": {
+    "workers": 4,
+    "max_queue_hours": 120
+  },
   "domains": [
     {
       "name": "example.org",
